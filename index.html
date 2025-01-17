@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live TV - M3U Import</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        h1 {
+            text-align: center;
+            margin: 20px 0;
+            color: #ff6600;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .card img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+        }
+
+        .card-content {
+            padding: 15px;
+            text-align: center;
+        }
+
+        .card-content h3 {
+            margin: 10px 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .card-content p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .card-content a {
+            display: inline-block;
+            margin-top: 10px;
+            padding: 10px 15px;
+            color: #fff;
+            background-color: #ff6600;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .card-content a:hover {
+            background-color: #cc5200;
+        }
+    </style>
+</head>
+<body>
+    <h1>Live TV Channels</h1>
+    <div class="grid-container" id="grid-container">
+        <!-- Dynamic content will be inserted here -->
+    </div>
+
+    <script>
+        // URL to fetch the M3U playlist
+        const m3uUrl = 'https://example.com/playlist.m3u'; // Replace with your M3U file URL
+
+        // Function to parse M3U data
+        async function fetchAndParseM3U() {
+            try {
+                const response = await fetch(m3uUrl);
+                const m3uText = await response.text();
+
+                // Parse M3U file
+                const channels = [];
+                const lines = m3uText.split('\n');
+                let currentChannel = {};
+
+                lines.forEach(line => {
+                    if (line.startsWith('#EXTINF:')) {
+                        // Extract channel metadata
+                        const match = line.match(/#EXTINF:[^,]*,(.*)/);
+                        currentChannel.name = match ? match[1].trim() : 'Unknown Channel';
+
+                        // Extract logo if available
+                        const logoMatch = line.match(/tvg-logo="(.*?)"/);
+                        currentChannel.logo = logoMatch ? logoMatch[1] : 'https://via.placeholder.com/250x150?text=No+Logo';
+                    } else if (line.startsWith('http')) {
+                        // URL is the stream link
+                        currentChannel.streamUrl = line.trim();
+                        channels.push(currentChannel);
+                        currentChannel = {}; // Reset for next channel
+                    }
+                });
+
+                return channels;
+            } catch (error) {
+                console.error('Error fetching or parsing M3U:', error);
+                return [];
+            }
+        }
+
+        // Function to display channels as cards
+        async function displayChannels() {
+            const channels = await fetchAndParseM3U();
+            const container = document.getElementById('grid-container');
+
+            if (channels.length === 0) {
+                container.innerHTML = '<p>No channels found or failed to load. Please check the M3U file.</p>';
+                return;
+            }
+
+            channels.forEach(channel => {
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <img src="${channel.logo}" alt="${channel.name}">
+                    <div class="card-content">
+                        <h3>${channel.name}</h3>
+                        <p>Live TV Channel</p>
+                        <a href="player.html?videoUrl=${encodeURIComponent(channel.streamUrl)}">Watch Now</a>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Call the function to load and display channels
+        displayChannels();
+    </script>
+</body>
+</html>
